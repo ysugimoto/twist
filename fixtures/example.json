@@ -1,0 +1,8 @@
+{
+  "json_value": "json_value",
+  "token": "token_from_json",
+  "server": {
+    "host": "json.localhost",
+    "port": 6666
+  }
+}

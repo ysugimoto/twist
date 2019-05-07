@@ -1,0 +1,4 @@
+token: token_from_yaml
+server:
+  host: yaml.localhost
+  port: 8888
