@@ -14,6 +14,9 @@ definitions:
       # specify the version
       - image: circleci/golang:1.12.0
     environment:
+      - PORT=3333
+      - HOST=env.localhost
+      - TOKEN=token_from_env
 
   job_presets: &job_presets
     build:
