@@ -1,4 +1,4 @@
-package cascade_config
+package twist
 
 const (
 	optionNameToml string = "toml"

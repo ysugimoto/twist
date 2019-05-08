@@ -1,13 +1,13 @@
-package cascade_config_test
+package twist_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	cc "github.com/ysugimoto/cascade-config"
+	twist "github.com/ysugimoto/twist"
 )
 
-func TestCascadeIni(t *testing.T) {
+func TestMixIni(t *testing.T) {
 	config := struct {
 		Token  string `ini:"token"`
 		Server struct {
@@ -15,9 +15,9 @@ func TestCascadeIni(t *testing.T) {
 			Port int    `ini:"port"`
 		} `ini:"server"`
 	}{}
-	err := cc.Cascade(
+	err := twist.Mix(
 		&config,
-		cc.WithIni("./fixtures/example.ini"),
+		twist.WithIni("./fixtures/example.ini"),
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, "token_from_ini", config.Token)
@@ -25,7 +25,7 @@ func TestCascadeIni(t *testing.T) {
 	assert.Equal(t, 7777, config.Server.Port)
 }
 
-func TestCascadeDefault(t *testing.T) {
+func TestMixDefault(t *testing.T) {
 	config := struct {
 		Token  string `default:"default_token"`
 		Server struct {
@@ -33,7 +33,7 @@ func TestCascadeDefault(t *testing.T) {
 			Port int    `default:"60000"`
 		}
 	}{}
-	err := cc.Cascade(
+	err := twist.Mix(
 		&config,
 	)
 	assert.NoError(t, err)
@@ -42,7 +42,7 @@ func TestCascadeDefault(t *testing.T) {
 	assert.Equal(t, 60000, config.Server.Port)
 }
 
-func TestCascadeToml(t *testing.T) {
+func TestMixToml(t *testing.T) {
 	config := struct {
 		TomlValue string `toml:"toml_value"`
 		Token     string `toml:"token"`
@@ -51,9 +51,9 @@ func TestCascadeToml(t *testing.T) {
 			Port int    `toml:"port"`
 		} `toml:"server"`
 	}{}
-	err := cc.Cascade(
+	err := twist.Mix(
 		&config,
-		cc.WithToml("./fixtures/example.toml"),
+		twist.WithToml("./fixtures/example.toml"),
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, "toml_value", config.TomlValue)
@@ -62,7 +62,7 @@ func TestCascadeToml(t *testing.T) {
 	assert.Equal(t, 9999, config.Server.Port)
 }
 
-func TestCascadeJson(t *testing.T) {
+func TestMixJson(t *testing.T) {
 	config := struct {
 		JsonValue string `json:"json_value"`
 		Token     string `json:"token"`
@@ -71,9 +71,9 @@ func TestCascadeJson(t *testing.T) {
 			Port int    `json:"port"`
 		} `json:"server"`
 	}{}
-	err := cc.Cascade(
+	err := twist.Mix(
 		&config,
-		cc.WithJson("./fixtures/example.json"),
+		twist.WithJson("./fixtures/example.json"),
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, "json_value", config.JsonValue)
@@ -82,7 +82,7 @@ func TestCascadeJson(t *testing.T) {
 	assert.Equal(t, 6666, config.Server.Port)
 }
 
-func TestCascadeYaml(t *testing.T) {
+func TestMixYaml(t *testing.T) {
 	config := struct {
 		YamlValue string `yaml:"yaml_value"`
 		Token     string `yaml:"token"`
@@ -91,9 +91,9 @@ func TestCascadeYaml(t *testing.T) {
 			Port int    `yaml:"port"`
 		} `yaml:"server"`
 	}{}
-	err := cc.Cascade(
+	err := twist.Mix(
 		&config,
-		cc.WithYaml("./fixtures/example.yaml"),
+		twist.WithYaml("./fixtures/example.yaml"),
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, "", config.YamlValue)
@@ -102,7 +102,7 @@ func TestCascadeYaml(t *testing.T) {
 	assert.Equal(t, 8888, config.Server.Port)
 }
 
-func TestCascadeEnv(t *testing.T) {
+func TestMixEnv(t *testing.T) {
 	config := struct {
 		Token  string `env:"TOKEN"`
 		Server struct {
@@ -110,9 +110,9 @@ func TestCascadeEnv(t *testing.T) {
 			Port int    `env:"PORT"`
 		}
 	}{}
-	err := cc.Cascade(
+	err := twist.Mix(
 		&config,
-		cc.WithEnv(),
+		twist.WithEnv(),
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, "token_from_env", config.Token)
@@ -120,7 +120,7 @@ func TestCascadeEnv(t *testing.T) {
 	assert.Equal(t, 3333, config.Server.Port)
 }
 
-func TestCascadeTomlAndJson(t *testing.T) {
+func TestMixTomlAndJson(t *testing.T) {
 	config := struct {
 		TomlValue string `toml:"toml_value"`
 		JsonValue string `json:"json_value"`
@@ -130,10 +130,10 @@ func TestCascadeTomlAndJson(t *testing.T) {
 			Port int    `toml:"port"` // will be TOML value
 		} `json:"server" toml:"server"`
 	}{}
-	err := cc.Cascade(
+	err := twist.Mix(
 		&config,
-		cc.WithToml("./fixtures/example.toml"),
-		cc.WithJson("./fixtures/example.json"),
+		twist.WithToml("./fixtures/example.toml"),
+		twist.WithJson("./fixtures/example.json"),
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, "toml_value", config.TomlValue)
@@ -143,7 +143,7 @@ func TestCascadeTomlAndJson(t *testing.T) {
 	assert.Equal(t, 9999, config.Server.Port)
 }
 
-func TestCascadeJsonAndIni(t *testing.T) {
+func TestMixJsonAndIni(t *testing.T) {
 	config := struct {
 		JsonValue string `json:"json_value"`
 		Token     string `ini:"token"`
@@ -152,10 +152,10 @@ func TestCascadeJsonAndIni(t *testing.T) {
 			Port int    `ini:"port"`  // will set INI value
 		} `ini:"server" json:"server"`
 	}{}
-	err := cc.Cascade(
+	err := twist.Mix(
 		&config,
-		cc.WithJson("./fixtures/example.json"),
-		cc.WithIni("./fixtures/example.ini"),
+		twist.WithJson("./fixtures/example.json"),
+		twist.WithIni("./fixtures/example.ini"),
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, "json_value", config.JsonValue)
@@ -164,7 +164,7 @@ func TestCascadeJsonAndIni(t *testing.T) {
 	assert.Equal(t, 7777, config.Server.Port)
 }
 
-func TestCascadeYamlAndEnv(t *testing.T) {
+func TestMixYamlAndEnv(t *testing.T) {
 	config := struct {
 		Token  string `yaml:"token"`
 		Server struct {
@@ -173,10 +173,10 @@ func TestCascadeYamlAndEnv(t *testing.T) {
 		} `yaml:"server"`
 		Other int `env:"PORT"`
 	}{}
-	err := cc.Cascade(
+	err := twist.Mix(
 		&config,
-		cc.WithYaml("./fixtures/example.yaml"),
-		cc.WithEnv(),
+		twist.WithYaml("./fixtures/example.yaml"),
+		twist.WithEnv(),
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, "token_from_yaml", config.Token)
@@ -185,7 +185,7 @@ func TestCascadeYamlAndEnv(t *testing.T) {
 	assert.Equal(t, 3333, config.Other)
 }
 
-func TestCascadeMusltipleToml(t *testing.T) {
+func TestMixMusltipleToml(t *testing.T) {
 	config := struct {
 		TomlValue string `toml:"toml_value"`
 		Token     string `toml:"token"`
@@ -194,10 +194,10 @@ func TestCascadeMusltipleToml(t *testing.T) {
 			Port int    `toml:"port"`
 		} `toml:"server"`
 	}{}
-	err := cc.Cascade(
+	err := twist.Mix(
 		&config,
-		cc.WithToml("./fixtures/example.toml"),
-		cc.WithToml("./fixtures/example.override.toml"),
+		twist.WithToml("./fixtures/example.toml"),
+		twist.WithToml("./fixtures/example.override.toml"),
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, "toml_value", config.TomlValue)

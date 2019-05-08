@@ -1,4 +1,4 @@
-module github.com/ysugimoto/cascade-config
+module github.com/ysugimoto/twist
 
 go 1.12
 

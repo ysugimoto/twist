@@ -1,4 +1,4 @@
-# cascade-config
+# twist
 
 Cascade and integrate config struct from various setting files and envrironment.
 
@@ -14,14 +14,14 @@ Supporting configuration types:
 ## Installation
 
 ```
-$ go get -u github.com/ysugimoto/cascade-config
+$ go get -u github.com/ysugimoto/twist
 ```
 
-Or install via pakcage manager which you're using like (dep, go mod, ...)
+Or install via pakcage manager which you're using like dep, go mod, etc...
 
 ## Getting Started
 
-Define your configuration strcut and call `Cascade()` function with cascading configurations.
+Define your configuration strcut and call `Mix()` function with cascading configurations.
 
 Here is toml file example:
 
@@ -44,7 +44,7 @@ pakcage main
 import (
   "log"
 
-  cc "github.com/ysugimoto/cascade-config"
+  "github.com/ysugimoto/twist"
 )
 
 type MyConfig struct {
@@ -59,7 +59,7 @@ type MyConfig struct {
 
 func main() {
   var config MyConfig{}
-  if err := cc.Cascade(&config, cc.WithToml("/path/to/setting.toml")); err != nil {
+  if err := twist.Mix(&config, twist.WithToml("/path/to/setting.toml")); err != nil {
     log.Fatal(err)
   }
   log.Println(config.Host)                // => localhost
@@ -71,7 +71,7 @@ func main() {
 
 ## Merging configuration from various kind of files and defaults
 
-This package can accept kinds of config files (eg. yaml and json and env).
+This package can atwistept kinds of config files (eg. yaml and json and env).
 To merge from some configurations, call `Cascade()` with some of `WithXXX` options and make sure put tag in your struct field which you want to assign:
 
 ```Go
@@ -80,7 +80,7 @@ pakcage main
 import (
   "log"
 
-  cc "github.com/ysugimoto/cascade-config"
+  "github.com/ysugimoto/twist"
 )
 
 type MyConfig struct {
@@ -97,11 +97,11 @@ type MyConfig struct {
 
 func main() {
   var config MyConfig{}
-  if err := cc.Cascade(
+  if err := twist.Mix(
     &config,
-    cc.WithToml("/path/to/setting.toml"),
-    cc.WithToml("/path/to/setting.yaml"),
-    cc.WithEnv(),
+    twist.WithToml("/path/to/setting.toml"),
+    twist.WithToml("/path/to/setting.yaml"),
+    twist.WithEnv(),
   ); err != nil {
     log.Fatal(err)
   }
@@ -113,7 +113,7 @@ func main() {
 }
 ```
 
-Of course you'll confuse when cascading from different file types, so usually you can use from same file types of partial configurations and integrate it, and secret values (like access_token, etc) should be assigned from envrironment variables:
+Of course you'll confuse when cascading from different file types, so usually you can use from same file types of partial configurations and integrate it, and secret values (like accessToken, etc) should be assigned from envrironment variables:
 
 ```json
 # /path/to/server.json
@@ -139,7 +139,7 @@ pakcage main
 import (
   "log"
 
-  cc "github.com/ysugimoto/cascade-config"
+  "github.com/ysugimoto/twist"
 )
 
 type MyConfig struct {
@@ -156,11 +156,11 @@ type MyConfig struct {
 
 func main() {
   var config MyConfig{}
-  if err := cc.Cascade(
+  if err := twist.Mix(
     &config,
-    cc.WithToml("/path/to/server.json"),  // will set only Host and Port
-    cc.WithToml("/path/to/service.json"), // will set only Service.Name and Service.Description
-    cc.WithEnv(),
+    twist.WithToml("/path/to/server.json"),  // will set only Host and Port
+    twist.WithToml("/path/to/service.json"), // will set only Service.Name and Service.Description
+    twist.WithEnv(),
   ); err != nil {
     log.Fatal(err)
   }

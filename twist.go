@@ -1,4 +1,4 @@
-package cascade_config
+package twist
 
 import (
 	"fmt"
@@ -52,9 +52,9 @@ func derefType(v reflect.Type) reflect.Type {
 // Main cascading function
 // Note that opts order is imporant. Configraions will be overrided by options order.
 // For example:
-//  Cacase(v, WithToml(), WithJson())            cascade order is toml -> json
-//  Cacase(v, WithToml(), WithJson(), WithEnv()) cascade order is toml -> jsoa -> env
-func Cascade(v interface{}, opts ...Option) error {
+//  Mix(v, WithToml(), WithJson())            cascade order is toml -> json
+//  Mix(v, WithToml(), WithJson(), WithEnv()) cascade order is toml -> jsoa -> env
+func Mix(v interface{}, opts ...Option) error {
 	t := reflect.TypeOf(v)
 	if t.Kind() != reflect.Ptr {
 		return errors.New("Cascading value must be a struct")
