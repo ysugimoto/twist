@@ -1,92 +1,96 @@
 package cascade_config
 
 import (
+	"fmt"
 	"os"
 	"reflect"
+	"strconv"
 
 	"encoding/json"
 
 	"github.com/BurntSushi/toml"
-	"github.com/caarlos0/env"
 	"github.com/go-ini/ini"
 	"github.com/go-yaml/yaml"
+	_ "github.com/k0kubun/pp"
 	"github.com/pkg/errors"
 )
 
+// Tag name constants
 const (
-	optionNameToml string = "toml"
-	optionNameIni  string = "ini"
-	optionNameYaml string = "yaml"
-	optionNameJson string = "json"
-	optionNameEnv  string = "env"
+	tagNameDefault = "default"
+	tagNameToml    = "toml"
+	tagNameIni     = "ini"
+	tagNameYaml    = "yaml"
+	tagNameJson    = "json"
+	tagNameEnv     = "env"
 )
 
-type Option struct {
-	name  string
-	value interface{}
-}
-
-func WithToml(tomlPath string) Option {
-	return Option{
-		name:  optionNameToml,
-		value: tomlPath,
+// Debug function
+// If CC_DEBUG environment is defined, output some logs
+func debug(args ...interface{}) {
+	if os.Getenv("CC_DEBUG") != "" {
+		fmt.Println(args...)
 	}
 }
 
-func WithIni(iniPath string) Option {
-	return Option{
-		name:  optionNameIni,
-		value: iniPath,
+// Dereference reflect.Value
+func derefValue(v reflect.Value) reflect.Value {
+	for v.Kind() == reflect.Ptr {
+		v = v.Elem()
 	}
+	return v
 }
 
-func WithYaml(yamlPath string) Option {
-	return Option{
-		name:  optionNameYaml,
-		value: yamlPath,
+// Dereference reflect.Type
+func derefType(v reflect.Type) reflect.Type {
+	for v.Kind() == reflect.Ptr {
+		v = v.Elem()
 	}
+	return v
 }
 
-func WithJson(jsonPath string) Option {
-	return Option{
-		name:  optionNameJson,
-		value: jsonPath,
-	}
-}
-
-func WithEnv() Option {
-	return Option{
-		name:  optionNameEnv,
-		value: nil,
-	}
-}
-
+// Main cascading function
+// Note that opts order is imporant. Configraions will be overrided by options order.
+// For example:
+//  Cacase(v, WithToml(), WithJson())            cascade order is toml -> json
+//  Cacase(v, WithToml(), WithJson(), WithEnv()) cascade order is toml -> jsoa -> env
 func Cascade(v interface{}, opts ...Option) error {
+	t := reflect.TypeOf(v)
+	if t.Kind() != reflect.Ptr {
+		return errors.New("Cascading value must be a struct")
+	}
+	value := derefValue(reflect.ValueOf(v))
+	if !value.CanSet() {
+		return errors.New("destination value cannot set values")
+	}
+	if err := cascadeDefault(value); err != nil {
+		return errors.Wrap(err, "failed to set default value")
+	}
+
 	for _, opt := range opts {
-		var file string
 		switch opt.name {
 		case optionNameToml:
-			file = opt.value.(string)
-			if err := cascadeToml(file, v); err != nil {
+			if err := cascadeToml(opt.value.(string), value, reflect.New(t)); err != nil {
 				return errors.Wrap(err, "Failed to cascade toml")
 			}
-		case optionNameIni:
-			file = opt.value.(string)
-			if err := cascadeIni(file, v); err != nil {
-				return errors.Wrap(err, "Failed to cascade ini")
-			}
 		case optionNameYaml:
-			file = opt.value.(string)
-			if err := cascadeYaml(file, v); err != nil {
+			if err := cascadeYaml(opt.value.(string), value, reflect.New(t)); err != nil {
 				return errors.Wrap(err, "Failed to cascade yaml")
 			}
+		case optionNameIni:
+			src, err := ini.Load(opt.value.(string))
+			if err != nil {
+				return errors.Wrap(err, "ini load error")
+			}
+			if err := cascadeIni(src, src.Section(""), value); err != nil {
+				return errors.Wrap(err, "Failed to cascade ini")
+			}
 		case optionNameJson:
-			file = opt.value.(string)
-			if err := cascadeJson(file, &v); err != nil {
+			if err := cascadeJson(opt.value.(string), value, reflect.New(t)); err != nil {
 				return errors.Wrap(err, "Failed to cascade json")
 			}
 		case optionNameEnv:
-			if err := cascadeEnv(v); err != nil {
+			if err := cascadeEnv(value); err != nil {
 				return errors.Wrap(err, "Failed to cascade env")
 			}
 		}
@@ -94,23 +98,16 @@ func Cascade(v interface{}, opts ...Option) error {
 	return nil
 }
 
-func cascadeToml(file string, v interface{}) error {
-	_, err := toml.DecodeFile(file, v)
-	return errors.Wrap(err, "toml decode error")
+// Parse toml file and merge to base struct
+func cascadeToml(file string, base, clone reflect.Value) error {
+	if _, err := toml.DecodeFile(file, clone.Interface()); err != nil {
+		return errors.Wrap(err, "toml decode error")
+	}
+	return mergeConfig(base, derefValue(clone), tagNameToml)
 }
 
-func cascadeIni(file string, v interface{}) error {
-	src, err := ini.Load(file)
-	if err != nil {
-		return errors.Wrap(err, "ini load error")
-	}
-	if err := src.MapTo(v); err != nil {
-		return errors.Wrap(err, "ini map error")
-	}
-	return nil
-}
-
-func cascadeYaml(file string, v interface{}) error {
+// Parse yaml file and merge to base struct
+func cascadeYaml(file string, base, clone reflect.Value) error {
 	if _, err := os.Stat(file); err != nil {
 		return errors.Wrap(err, "yaml file not exists")
 	}
@@ -119,13 +116,14 @@ func cascadeYaml(file string, v interface{}) error {
 		return errors.Wrap(err, "yaml file open error")
 	}
 	defer fp.Close()
-	if err := yaml.NewDecoder(fp).Decode(v); err != nil {
+	if err := yaml.NewDecoder(fp).Decode(clone.Interface()); err != nil {
 		return errors.Wrap(err, "yaml decode error")
 	}
-	return nil
+	return mergeConfig(base, derefValue(clone), tagNameYaml)
 }
 
-func cascadeJson(file string, v interface{}) error {
+// Parse JSON file and merge to base struct
+func cascadeJson(file string, base, clone reflect.Value) error {
 	if _, err := os.Stat(file); err != nil {
 		return errors.Wrap(err, "json file not exists")
 	}
@@ -134,15 +132,213 @@ func cascadeJson(file string, v interface{}) error {
 		return errors.Wrap(err, "json file open error")
 	}
 	defer fp.Close()
-	if err := json.NewDecoder(fp).Decode(v); err != nil {
+	if err := json.NewDecoder(fp).Decode(clone.Interface()); err != nil {
 		return errors.Wrap(err, "json decode error")
+	}
+	return mergeConfig(base, derefValue(clone), tagNameJson)
+}
+
+// Parse INI file and merge to base struct
+// Note that currently we support only single section, so you can't define nested section.
+func cascadeIni(cfg *ini.File, s *ini.Section, v reflect.Value) error {
+	t := derefType(v.Type())
+	v = derefValue(v)
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		value := v.Field(i)
+
+		if !value.CanSet() {
+			debug("cannot set: ", field.Name)
+			continue
+		}
+
+		ft := field.Type
+		var isPtr bool
+		if ft.Kind() == reflect.Ptr {
+			isPtr = true
+			ft = derefType(ft)
+		}
+
+		tag, ok := field.Tag.Lookup(tagNameIni)
+		if !ok || tag == "" || tag == "-" {
+			continue
+		}
+		if ft.Kind() == reflect.Struct {
+			if ss := cfg.Section(tag); ss != nil {
+				debug("subsection: ", tag, ss.KeyStrings())
+				cascadeIni(cfg, ss, value)
+			}
+			continue
+		}
+		key := s.Key(tag)
+		if key == nil {
+			debug("key not found in ini: ", tag)
+			continue
+		}
+		//pp.Println(key)
+		debug(field.Name, key.String(), ft.Kind())
+		if err := assignValue(ft, value, key.Value(), isPtr); err != nil {
+			return errors.Wrap(err, "failed to assign values")
+		}
+		debug("assigned: ", tag, key.Value())
 	}
 	return nil
 }
 
-func cascadeEnv(v interface{}) error {
-	if err := env.Parse(v); err != nil {
-		return errors.Wrap(err, "env parse error")
+// Walk struct field and assign from environment variable
+func cascadeEnv(v reflect.Value) error {
+	t := derefType(v.Type())
+	v = derefValue(v)
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		value := v.Field(i)
+
+		if !value.CanSet() {
+			debug("cannot set: ", field.Name)
+			continue
+		}
+
+		ft := field.Type
+		var isPtr bool
+		if ft.Kind() == reflect.Ptr {
+			isPtr = true
+			ft = derefType(ft)
+		}
+
+		if ft.Kind() == reflect.Struct {
+			cascadeEnv(value)
+			continue
+		}
+		tag, ok := field.Tag.Lookup(tagNameEnv)
+		if !ok || tag == "" || tag == "-" {
+			continue
+		}
+		envValue := os.Getenv(tag)
+		if envValue == "" {
+			continue
+		}
+		debug(field.Name, envValue, ft.Kind())
+		if err := assignValue(ft, value, envValue, isPtr); err != nil {
+			return errors.Wrap(err, "failed to assign values")
+		}
+		debug("assigned: ", field.Name, envValue)
+	}
+	return nil
+}
+
+// Walk struct field and assign from default tagged value
+func cascadeDefault(v reflect.Value) error {
+	t := derefType(v.Type())
+	v = derefValue(v)
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		value := v.Field(i)
+
+		if !value.CanSet() {
+			debug("cannot set: ", field.Name)
+			continue
+		}
+
+		ft := field.Type
+		var isPtr bool
+		if ft.Kind() == reflect.Ptr {
+			isPtr = true
+			ft = derefType(ft)
+		}
+
+		if ft.Kind() == reflect.Struct {
+			cascadeDefault(value)
+			continue
+		}
+		tag, ok := field.Tag.Lookup(tagNameDefault)
+		if !ok || tag == "" || tag == "-" {
+			continue
+		}
+		if err := assignValue(ft, value, tag, isPtr); err != nil {
+			return errors.Wrap(err, "failed to assign values")
+		}
+		debug("assigned: ", field.Name, tag)
+	}
+	return nil
+}
+
+// Merge override config
+func mergeConfig(v, merge reflect.Value, tagName string) error {
+	t := v.Type()
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		debug("processing: ", field.Name, field.Type.Kind())
+		target := merge.Field(i)
+		if !target.IsValid() {
+			debug("target invalid: ", field.Name)
+			continue
+		}
+		tag, ok := field.Tag.Lookup(tagName)
+		if !ok || tag == "" || tag == "-" {
+			debug("tag not found: ", tagName, field.Name)
+			continue
+		}
+		if field.Type.Kind() == reflect.Struct {
+			debug("nested struct: ", field.Name)
+			mergeConfig(v.Field(i), derefValue(target), tagName)
+		} else {
+			v.Field(i).Set(target)
+		}
+	}
+	return nil
+}
+
+// Assign value which corresponds to struct fiele type.
+// Currently we only support some primitive values like (int, uint, float, string)
+// because configurations are enough to use those values.
+func assignValue(ft reflect.Type, value reflect.Value, envValue string, isPtr bool) error {
+	switch ft.Kind() {
+	case reflect.String:
+		if isPtr {
+			value.Set(reflect.ValueOf(&envValue))
+		} else {
+			value.SetString(envValue)
+		}
+	case reflect.Bool:
+		b := envValue == "true" || envValue == "yes"
+		if isPtr {
+			value.Set(reflect.ValueOf(&b))
+		} else {
+			value.SetBool(b)
+		}
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		i, err := strconv.ParseInt(envValue, 10, 64)
+		if err != nil {
+			return errors.Wrap(err, "failed to convert from string to int")
+		}
+		if isPtr {
+			value.Set(reflect.ValueOf(&i))
+		} else {
+			value.SetInt(i)
+		}
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		ui, err := strconv.ParseUint(envValue, 10, 64)
+		if err != nil {
+			return errors.Wrap(err, "failed to convert from string to uint")
+		}
+		if isPtr {
+			value.Set(reflect.ValueOf(&ui))
+		} else {
+			value.SetUint(ui)
+		}
+	case reflect.Float32, reflect.Float64:
+		f, err := strconv.ParseFloat(envValue, 64)
+		if err != nil {
+			return errors.Wrap(err, "failed to convert from string to float")
+		}
+		if isPtr {
+			value.Set(reflect.ValueOf(&f))
+		} else {
+			value.SetFloat(f)
+		}
 	}
 	return nil
 }

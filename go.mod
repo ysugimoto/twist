@@ -7,6 +7,8 @@ require (
 	github.com/caarlos0/env v3.5.0+incompatible
 	github.com/go-ini/ini v1.42.0
 	github.com/go-yaml/yaml v2.1.0+incompatible
+	github.com/k0kubun/pp v3.0.1+incompatible
+	github.com/mattn/go-colorable v0.1.1 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.3.0
 )
