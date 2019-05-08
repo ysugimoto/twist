@@ -1,6 +1,6 @@
 # cascade-config
 
-Cascading config struct from various setting files and envrironment.
+Cascade and integrate config struct from various setting files and envrironment.
 
 Supporting configuration types:
 
