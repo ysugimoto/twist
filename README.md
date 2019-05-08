@@ -69,10 +69,10 @@ func main() {
 }
 ```
 
-## Merging configuration from kind of files and defaults
+## Merging configuration from various kind of files and defaults
 
 This package can accept kinds of config files (eg. yaml and json and env).
-To use some configurations, call `Cascade()` with some of `WithXXX` options and make sure put tag in your struct:
+To merge from some configurations, call `Cascade()` with some of `WithXXX` options and make sure put tag in your struct field which you want to assign:
 
 ```Go
 pakcage main
@@ -85,10 +85,10 @@ import (
 
 type MyConfig struct {
   Host string `toml:"host"` // will be used from toml file
-  Port int `yaml:"port"` // will be used from yaml file
+  Port int `yaml:"port"`    // will be used from yaml file
 
   Service struct{
-    Name string `default:"My Service"` // set as default
+    Name string `default:"My Service"`                 // set as default
     Description string `default:"My Favorite Service"` // set as default
   } `toml:"service" yaml:"service"` // <- need if you want to assign from multiple files
 
@@ -113,7 +113,7 @@ func main() {
 }
 ```
 
-Of course you'll confuse when cascading from different file types, so usually you can use from same file types of partial configurations and integrate it, and secret values (like access_token, etc) should assign from envrironment variable:
+Of course you'll confuse when cascading from different file types, so usually you can use from same file types of partial configurations and integrate it, and secret values (like access_token, etc) should be assigned from envrironment variables:
 
 ```json
 # /path/to/server.json
