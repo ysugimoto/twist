@@ -176,6 +176,29 @@ func main() {
 }
 ```
 
+## Correspond Struct Tags
+
+```Go
+type Config struct {
+  TomlValue string `toml:"value"`       // for toml mapping
+  YamlValue string `yaml:"value"`       // for yaml mapping
+  JsonValue string `json:"value"`       // for json mapping
+  IniValue string `ini:"value"`         // for ini mapping
+  EnvValue string `env:"value"`         // for env mapping
+  CliValue string `cli:"value"`         // for cli mapping
+  DefaultValue string `default:"value"` // set as default value
+}
+```
+
+`toml`, `yaml`, `json` and `ini` are used following packages:
+
+- `github.com/BurntSushi/toml`
+- `github.com/go-yaml/yaml`
+- `github.com/go-ini/ini`
+- `encoding/json`
+
+`env` and `cli` is package defined.
+
 ## Author
 
 Yoshiaki Sugimoto
