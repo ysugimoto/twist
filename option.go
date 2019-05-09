@@ -1,11 +1,16 @@
 package twist
 
+import (
+	"os"
+)
+
 const (
-	optionNameToml string = "toml"
-	optionNameIni  string = "ini"
-	optionNameYaml string = "yaml"
-	optionNameJson string = "json"
-	optionNameEnv  string = "env"
+	optionNameToml = "toml"
+	optionNameIni  = "ini"
+	optionNameYaml = "yaml"
+	optionNameJson = "json"
+	optionNameEnv  = "env"
+	optionNameCli  = "cli"
 )
 
 // Cascading config options
@@ -51,5 +56,16 @@ func WithEnv() Option {
 	return Option{
 		name:  optionNameEnv,
 		value: nil,
+	}
+}
+
+// Will cascade from command-line arguments
+func WithCli(args []string) Option {
+	if args == nil {
+		args = os.Args[1:]
+	}
+	return Option{
+		name:  optionNameCli,
+		value: args,
 	}
 }
