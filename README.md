@@ -180,13 +180,13 @@ func main() {
 
 ```Go
 type Config struct {
-  TomlValue    string `toml:"value"`    // for toml mapping
-  YamlValue    string `yaml:"value"`    // for yaml mapping
-  JsonValue    string `json:"value"`    // for json mapping
-  IniValue     string `ini:"value"`     // for ini mapping
-  EnvValue     string `env:"value"`     // for env mapping
-  CliValue     string `cli:"value"`     // for cli mapping
-  DefaultValue string `default:"value"` // set as default value
+  TomlValue    string `toml:"value"`     // for toml mapping
+  YamlValue    string `yaml:"value"`     // for yaml mapping
+  JsonValue    string `json:"value"`     // for json mapping
+  IniValue     string `ini:"value"`      // for ini mapping
+  EnvValue     string `env:"ENV_NAME"`   // for env mapping
+  CliValue     string `cli:"short,long"` // for cli mapping
+  DefaultValue string `default:"value"`  // set as default value
 }
 ```
 
