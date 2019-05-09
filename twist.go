@@ -5,6 +5,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"encoding/json"
 
@@ -23,6 +24,7 @@ const (
 	tagNameYaml    = "yaml"
 	tagNameJson    = "json"
 	tagNameEnv     = "env"
+	tagNameCli     = "cli"
 )
 
 // Debug function
@@ -92,6 +94,10 @@ func Mix(v interface{}, opts ...Option) error {
 		case optionNameEnv:
 			if err := cascadeEnv(value); err != nil {
 				return errors.Wrap(err, "Failed to cascade env")
+			}
+		case optionNameCli:
+			if err := cascadeCli(value, parseCliArgs(opt.value.([]string))); err != nil {
+				return errors.Wrap(err, "Failed to cascase cli")
 			}
 		}
 	}
@@ -265,6 +271,53 @@ func cascadeDefault(v reflect.Value) error {
 	return nil
 }
 
+// Walk struct field and assign from command-line arguments
+func cascadeCli(v reflect.Value, cliOptions map[string]string) error {
+	t := derefType(v.Type())
+	v = derefValue(v)
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		value := v.Field(i)
+
+		if !value.CanSet() {
+			debug("cannot set: ", field.Name)
+			continue
+		}
+
+		ft := field.Type
+		var isPtr bool
+		if ft.Kind() == reflect.Ptr {
+			isPtr = true
+			ft = derefType(ft)
+		}
+
+		if ft.Kind() == reflect.Struct {
+			cascadeCli(value, cliOptions)
+			continue
+		}
+		tag, ok := field.Tag.Lookup(tagNameCli)
+		if !ok || tag == "" || tag == "-" {
+			continue
+		}
+		var cliValue string
+		for _, name := range strings.Split(tag, ",") {
+			if vv, ok := cliOptions[name]; ok {
+				cliValue = vv
+				break
+			}
+		}
+		if cliValue == "" {
+			continue
+		}
+		if err := assignValue(ft, value, cliValue, isPtr); err != nil {
+			return errors.Wrap(err, "failed to assign values")
+		}
+		debug("assigned: ", field.Name, tag)
+	}
+	return nil
+}
+
 // Merge override config
 func mergeConfig(v, merge reflect.Value, tagName string) error {
 	t := v.Type()
@@ -341,4 +394,46 @@ func assignValue(ft reflect.Type, value reflect.Value, envValue string, isPtr bo
 		}
 	}
 	return nil
+}
+
+func parseCliArgs(args []string) map[string]string {
+	options := make(map[string]string)
+	size := len(args)
+
+	for i := 0; i < size; i++ {
+		v := args[i]
+		var name, value string
+
+		if v[0] != '-' || len(v) <= 1 {
+			continue
+		}
+		if v[1] == '-' {
+			// Parse as long argument
+			kv := strings.Split(v, "=")
+			name = kv[0][2:]
+			if len(kv) > 1 {
+				value = kv[1]
+			} else if i+1 < size {
+				value = args[i+1]
+				i++
+			} else {
+				value = ""
+			}
+		} else {
+			// Parse as short argument
+			name = string(v[1])
+			if len(v) == 2 {
+				if i+1 < size {
+					value = args[i+1]
+				} else {
+					value = ""
+				}
+			} else {
+				value = v[2:]
+			}
+		}
+		options[name] = value
+	}
+
+	return options
 }

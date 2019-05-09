@@ -7,6 +7,26 @@ import (
 	twist "github.com/ysugimoto/twist"
 )
 
+func TestMixCli(t *testing.T) {
+	config := struct {
+		Token  string `cli:"t,token"`
+		Server struct {
+			Host string `cli:"h,host"`
+			Port int    `cli:"p,port"`
+		}
+	}{}
+	// Actually provide from os.Args[1:]
+	args := []string{"-h", "cli.localhost", "--port=9000", "--token", "token_from_cli"}
+	err := twist.Mix(
+		&config,
+		twist.WithCli(args),
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, "token_from_cli", config.Token)
+	assert.Equal(t, "cli.localhost", config.Server.Host)
+	assert.Equal(t, 9000, config.Server.Port)
+}
+
 func TestMixIni(t *testing.T) {
 	config := struct {
 		Token  string `ini:"token"`
