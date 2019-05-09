@@ -12,7 +12,6 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/go-ini/ini"
 	"github.com/go-yaml/yaml"
-	_ "github.com/k0kubun/pp"
 	"github.com/pkg/errors"
 )
 
