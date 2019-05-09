@@ -153,7 +153,7 @@ type MyConfig struct {
   Service struct{
     Name string `json:"name"`
     Description string `json:"description"`
-  } `json:"service"
+  } `json:"service"`
 
   Secret string `env:"SECRET"` // will be used from envrironment variable
 }
