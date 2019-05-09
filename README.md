@@ -9,6 +9,7 @@ Supporting configuration types:
 - json file
 - ini file
 - environment variables
+- commandline arguments
 - default values
 
 ## Installation
@@ -79,6 +80,7 @@ pakcage main
 
 import (
   "log"
+  "os"
 
   "github.com/ysugimoto/twist"
 )
@@ -92,7 +94,8 @@ type MyConfig struct {
     Description string `default:"My Favorite Service"` // set as default
   } `toml:"service" yaml:"service"` // <- need if you want to assign from multiple files
 
-  Secret string `env:"SECRET"` // will be used from envrironment variable
+  Secret string `env:"SECRET"`     // will be used from envrironment variable
+  Verbose string `cli:"v,verbose"` // will be used from commandline arguments
 }
 
 func main() {
@@ -102,6 +105,7 @@ func main() {
     twist.WithToml("/path/to/setting.toml"),
     twist.WithToml("/path/to/setting.yaml"),
     twist.WithEnv(),
+    twist.WithCli(os.Args[1:]),
   ); err != nil {
     log.Fatal(err)
   }
