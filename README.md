@@ -40,7 +40,7 @@ description = "This is my favorite service"
 Then this package can use as following:
 
 ```Go
-pakcage main
+package main
 
 import (
   "log"
@@ -76,7 +76,7 @@ This package can atwistept kinds of config files (eg. yaml and json and env).
 To merge from some configurations, call `Cascade()` with some of `WithXXX` options and make sure put tag in your struct field which you want to assign:
 
 ```Go
-pakcage main
+package main
 
 import (
   "log"
@@ -138,7 +138,7 @@ Of course you'll confuse when cascading from different file types, so usually yo
 Then cascading is:
 
 ```Go
-pakcage main
+package main
 
 import (
   "log"
