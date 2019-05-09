@@ -53,7 +53,7 @@ type MyConfig struct {
   Port int    `toml:"port"`
 
   Service struct{
-    Name string        `toml:"name"`
+    Name        string `toml:"name"`
     Description string `toml:"description"`
   } `toml:"service"` // <- need this
 }
@@ -90,7 +90,7 @@ type MyConfig struct {
   Port int    `yaml:"port"` // will be used from yaml file
 
   Service struct{
-    Name string        `default:"My Service"`          // set as default
+    Name        string `default:"My Service"`          // set as default
     Description string `default:"My Favorite Service"` // set as default
   } `toml:"service" yaml:"service"` // <- need if you want to assign from multiple files
 
@@ -149,11 +149,11 @@ type MyConfig struct {
   Port int    `json:"port"`
 
   Service struct{
-    Name string        `json:"name"`
+    Name        string `json:"name"`
     Description string `json:"description"`
   } `json:"service"`
 
-  Secret string  `env:"SECRET"`    // will be used from envrironment variable
+  Secret  string `env:"SECRET"`    // will be used from envrironment variable
   Verbose string `cli:"v,verbose"` // will be used from commandline arguments
 }
 
@@ -180,12 +180,12 @@ func main() {
 
 ```Go
 type Config struct {
-  TomlValue string    `toml:"value"`    // for toml mapping
-  YamlValue string    `yaml:"value"`    // for yaml mapping
-  JsonValue string    `json:"value"`    // for json mapping
-  IniValue string     `ini:"value"`     // for ini mapping
-  EnvValue string     `env:"value"`     // for env mapping
-  CliValue string     `cli:"value"`     // for cli mapping
+  TomlValue    string `toml:"value"`    // for toml mapping
+  YamlValue    string `yaml:"value"`    // for yaml mapping
+  JsonValue    string `json:"value"`    // for json mapping
+  IniValue     string `ini:"value"`     // for ini mapping
+  EnvValue     string `env:"value"`     // for env mapping
+  CliValue     string `cli:"value"`     // for cli mapping
   DefaultValue string `default:"value"` // set as default value
 }
 ```
