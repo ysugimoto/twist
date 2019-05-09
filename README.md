@@ -95,7 +95,6 @@ type MyConfig struct {
   } `toml:"service" yaml:"service"` // <- need if you want to assign from multiple files
 
   Secret string `env:"SECRET"`     // will be used from envrironment variable
-  Verbose string `cli:"v,verbose"` // will be used from commandline arguments
 }
 
 func main() {
@@ -105,7 +104,6 @@ func main() {
     twist.WithToml("/path/to/setting.toml"),
     twist.WithToml("/path/to/setting.yaml"),
     twist.WithEnv(),
-    twist.WithCli(os.Args[1:]),
   ); err != nil {
     log.Fatal(err)
   }
@@ -156,6 +154,7 @@ type MyConfig struct {
   } `json:"service"`
 
   Secret string `env:"SECRET"` // will be used from envrironment variable
+  Verbose string `cli:"v,verbose"` // will be used from commandline arguments
 }
 
 func main() {
@@ -165,6 +164,7 @@ func main() {
     twist.WithToml("/path/to/server.json"),  // will set only Host and Port
     twist.WithToml("/path/to/service.json"), // will set only Service.Name and Service.Description
     twist.WithEnv(),
+    twist.WithCli(os.Args[1:]),
   ); err != nil {
     log.Fatal(err)
   }
