@@ -59,7 +59,7 @@ type MyConfig struct {
 }
 
 func main() {
-  var config MyConfig{}
+  var config MyConfig
   if err := twist.Mix(&config, twist.WithToml("/path/to/setting.toml")); err != nil {
     log.Fatal(err)
   }
@@ -99,7 +99,7 @@ type MyConfig struct {
 }
 
 func main() {
-  var config MyConfig{}
+  var config MyConfig
   if err := twist.Mix(
     &config,
     twist.WithToml("/path/to/setting.toml"),
@@ -159,7 +159,7 @@ type MyConfig struct {
 }
 
 func main() {
-  var config MyConfig{}
+  var config MyConfig
   if err := twist.Mix(
     &config,
     twist.WithToml("/path/to/server.json"),  // will set only Host and Port
