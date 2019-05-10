@@ -181,7 +181,6 @@ func cascadeIni(cfg *ini.File, s *ini.Section, v reflect.Value) error {
 			debug("key not found in ini: ", tag)
 			continue
 		}
-		//pp.Println(key)
 		debug(field.Name, key.String(), ft.Kind())
 		if err := assignValue(ft, value, key.Value(), isPtr); err != nil {
 			return errors.Wrap(err, "failed to assign values")
@@ -395,6 +394,7 @@ func assignValue(ft reflect.Type, value reflect.Value, envValue string, isPtr bo
 	return nil
 }
 
+// Parse command-line argument strings to map with short/long keys
 func parseCliArgs(args []string) map[string]string {
 	options := make(map[string]string)
 	size := len(args)
