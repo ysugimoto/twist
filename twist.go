@@ -26,12 +26,15 @@ const (
 	tagNameCli     = "cli"
 )
 
+var isDebug = os.Getenv("TWIST_DEBUG") != ""
+
 // Debug function
 // If CC_DEBUG environment is defined, output some logs
 func debug(args ...interface{}) {
-	if os.Getenv("CC_DEBUG") != "" {
-		fmt.Println(args...)
+	if !isDebug {
+		return
 	}
+	fmt.Println(args...)
 }
 
 // Dereference reflect.Value
@@ -51,7 +54,7 @@ func derefType(v reflect.Type) reflect.Type {
 }
 
 // Main cascading function
-// Note that opts order is imporant. Configraions will be overrided by options order.
+// Note that opts order is important. Configraions will be overrided by options order.
 // For example:
 //  Mix(v, WithToml(), WithJson())            cascade order is toml -> json
 //  Mix(v, WithToml(), WithJson(), WithEnv()) cascade order is toml -> jsoa -> env
@@ -143,7 +146,7 @@ func cascadeJson(file string, base, clone reflect.Value) error {
 	return mergeConfig(base, derefValue(clone), tagNameJson)
 }
 
-// Parse INI file and merge to base struct
+// Find INI section value and merge to base struct
 // Note that currently we support only single section, so you can't define nested section.
 func cascadeIni(cfg *ini.File, s *ini.Section, v reflect.Value) error {
 	t := derefType(v.Type())
@@ -342,9 +345,9 @@ func mergeConfig(v, merge reflect.Value, tagName string) error {
 	return nil
 }
 
-// Assign value which corresponds to struct fiele type.
-// Currently we only support some primitive values like (int, uint, float, string)
-// because configurations are enough to use those values.
+// Assign value which corresponds to struct field type.
+// Currently we only support some primitive values like int, uint, float and string.
+// Because configurations are enough to use those values.
 func assignValue(ft reflect.Type, value reflect.Value, envValue string, isPtr bool) error {
 	switch ft.Kind() {
 	case reflect.String:

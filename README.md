@@ -3,7 +3,7 @@
 
 # twist
 
-Cascade and integrate config struct from various setting files and envrironment.
+Cascade and integrate config struct from various setting files, envrironments, and command-line arguments
 
 Supporting configuration types:
 
@@ -12,7 +12,7 @@ Supporting configuration types:
 - json file
 - ini file
 - environment variables
-- commandline arguments
+- command-line arguments
 - default values
 
 ## Installation
@@ -21,7 +21,7 @@ Supporting configuration types:
 $ go get -u github.com/ysugimoto/twist
 ```
 
-Or install via pakcage manager which you're using like dep, go mod, etc...
+Or install via package manager which you're using like dep, go mod, etc...
 
 ## Getting Started
 
@@ -75,8 +75,8 @@ func main() {
 
 ## Merging configuration from various kind of files and defaults
 
-This package can atwistept kinds of config files (eg. yaml and json and env).
-To merge from some configurations, call `Cascade()` with some of `WithXXX` options and make sure put tag in your struct field which you want to assign:
+This package can support kinds of config files (eg. yaml and json and env).
+To merge from some configurations, call `Mix()` with some of `WithXXX` options and make sure put tag in your struct field which you want to assign:
 
 ```Go
 package main
@@ -118,7 +118,7 @@ func main() {
 }
 ```
 
-Of course you'll confuse when cascading from different file types, so usually you can use from same file types of partial configurations and integrate it, and secret values (like accessToken, etc) should be assigned from envrironment variables:
+Of course you'll confuse when cascading from different file types, so usually you can use from same file of partial configurations and integrate it, and secret values (like accessToken, etc) should be assigned from envrironment variables:
 
 ```json
 # /path/to/server.json
@@ -157,7 +157,7 @@ type MyConfig struct {
   } `json:"service"`
 
   Secret  string `env:"SECRET"`    // will be used from envrironment variable
-  Verbose string `cli:"v,verbose"` // will be used from commandline arguments
+  Verbose string `cli:"v,verbose"` // will be used from command-line arguments
 }
 
 func main() {
