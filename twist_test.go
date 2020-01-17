@@ -225,3 +225,20 @@ func TestMixMusltipleToml(t *testing.T) {
 	assert.Equal(t, "toml.override.localhost", config.Server.Host)
 	assert.Equal(t, 9999, config.Server.Port)
 }
+
+func TestMixFallbackDefault(t *testing.T) {
+	var config struct {
+		Token  string `yaml:"token" default:"value1"`
+		Server struct {
+			Host     string `yaml:"host" default:"localhost"`
+			Port     int    `yaml:"port" default:"9000"`
+			Protocol string `yaml:"protocol" default:"tcp"`
+		} `yaml:"server"`
+	}
+	err := twist.Mix(&config, twist.WithYaml("./fixtures/example.yaml"))
+	assert.NoError(t, err)
+	assert.Equal(t, "token_from_yaml", config.Token)
+	assert.Equal(t, "yaml.localhost", config.Server.Host)
+	assert.Equal(t, 8888, config.Server.Port)
+	assert.Equal(t, "tcp", config.Server.Protocol)
+}

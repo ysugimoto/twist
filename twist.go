@@ -67,9 +67,6 @@ func Mix(v interface{}, opts ...Option) error {
 	if !value.CanSet() {
 		return errors.New("destination value cannot set values")
 	}
-	if err := cascadeDefault(value); err != nil {
-		return errors.Wrap(err, "failed to set default value")
-	}
 
 	for _, opt := range opts {
 		switch opt.name {
@@ -102,6 +99,9 @@ func Mix(v interface{}, opts ...Option) error {
 				return errors.Wrap(err, "Failed to cascase cli")
 			}
 		}
+	}
+	if err := cascadeDefault(value); err != nil {
+		return errors.Wrap(err, "failed to set default value")
 	}
 	return nil
 }
@@ -260,6 +260,9 @@ func cascadeDefault(v reflect.Value) error {
 			cascadeDefault(value)
 			continue
 		}
+		if !isNotZeroValue(ft, value) {
+			continue
+		}
 		tag, ok := field.Tag.Lookup(tagNameDefault)
 		if !ok || tag == "" || tag == "-" {
 			continue
@@ -345,9 +348,26 @@ func mergeConfig(v, merge reflect.Value, tagName string) error {
 	return nil
 }
 
-// Assign value which corresponds to struct field type.
-// Currently we only support some primitive values like int, uint, float and string.
-// Because configurations are enough to use those values.
+// Check struct field has already been assigned some value from other cascading
+func isNotZeroValue(ft reflect.Type, value reflect.Value) bool {
+	switch ft.Kind() {
+	case reflect.String:
+		return value.String() == ""
+	case reflect.Bool:
+		return value.Bool() == false
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return value.Int() == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return value.Uint() == 0
+	case reflect.Float32, reflect.Float64:
+		return value.Float() == 0
+	}
+	return false
+}
+
+// Assign value which corresponds to struct fiele type.
+// Currently we only support some primitive values like (int, uint, float, string)
+// because configurations are enough to use those values.
 func assignValue(ft reflect.Type, value reflect.Value, envValue string, isPtr bool) error {
 	switch ft.Kind() {
 	case reflect.String:
