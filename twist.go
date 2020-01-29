@@ -185,7 +185,7 @@ func cascadeIni(cfg *ini.File, s *ini.Section, v reflect.Value) error {
 			continue
 		}
 		debug(field.Name, key.String(), ft.Kind())
-		if err := assignValue(ft, value, key.Value(), isPtr); err != nil {
+		if err := assignValue(ft, value, key.Value(), isPtr, false); err != nil {
 			return errors.Wrap(err, "failed to assign values")
 		}
 		debug("assigned: ", tag, key.Value())
@@ -227,7 +227,7 @@ func cascadeEnv(v reflect.Value) error {
 			continue
 		}
 		debug(field.Name, envValue, ft.Kind())
-		if err := assignValue(ft, value, envValue, isPtr); err != nil {
+		if err := assignValue(ft, value, envValue, isPtr, false); err != nil {
 			return errors.Wrap(err, "failed to assign values")
 		}
 		debug("assigned: ", field.Name, envValue)
@@ -260,14 +260,14 @@ func cascadeDefault(v reflect.Value) error {
 			cascadeDefault(value)
 			continue
 		}
-		if !isNotZeroValue(ft, value) {
+		if !isZeroValue(ft, value) {
 			continue
 		}
 		tag, ok := field.Tag.Lookup(tagNameDefault)
 		if !ok || tag == "" || tag == "-" {
 			continue
 		}
-		if err := assignValue(ft, value, tag, isPtr); err != nil {
+		if err := assignValue(ft, value, tag, isPtr, false); err != nil {
 			return errors.Wrap(err, "failed to assign values")
 		}
 		debug("assigned: ", field.Name, tag)
@@ -305,16 +305,18 @@ func cascadeCli(v reflect.Value, cliOptions map[string]string) error {
 			continue
 		}
 		var cliValue string
+		var found bool
 		for _, name := range strings.Split(tag, ",") {
 			if vv, ok := cliOptions[name]; ok {
 				cliValue = vv
+				found = true
 				break
 			}
 		}
-		if cliValue == "" {
+		if !found {
 			continue
 		}
-		if err := assignValue(ft, value, cliValue, isPtr); err != nil {
+		if err := assignValue(ft, value, cliValue, isPtr, true); err != nil {
 			return errors.Wrap(err, "failed to assign values")
 		}
 		debug("assigned: ", field.Name, tag)
@@ -349,7 +351,7 @@ func mergeConfig(v, merge reflect.Value, tagName string) error {
 }
 
 // Check struct field has already been assigned some value from other cascading
-func isNotZeroValue(ft reflect.Type, value reflect.Value) bool {
+func isZeroValue(ft reflect.Type, value reflect.Value) bool {
 	switch ft.Kind() {
 	case reflect.String:
 		return value.String() == ""
@@ -368,7 +370,7 @@ func isNotZeroValue(ft reflect.Type, value reflect.Value) bool {
 // Assign value which corresponds to struct fiele type.
 // Currently we only support some primitive values like (int, uint, float, string)
 // because configurations are enough to use those values.
-func assignValue(ft reflect.Type, value reflect.Value, envValue string, isPtr bool) error {
+func assignValue(ft reflect.Type, value reflect.Value, envValue string, isPtr bool, cliAssign bool) error {
 	switch ft.Kind() {
 	case reflect.String:
 		if isPtr {
@@ -377,13 +379,22 @@ func assignValue(ft reflect.Type, value reflect.Value, envValue string, isPtr bo
 			value.SetString(envValue)
 		}
 	case reflect.Bool:
-		b := envValue == "true" || envValue == "yes"
+		var b bool
+		if cliAssign {
+			b = envValue == "" || envValue == "yes"
+		} else {
+			b = envValue == "true" || envValue == "yes"
+		}
 		if isPtr {
 			value.Set(reflect.ValueOf(&b))
 		} else {
 			value.SetBool(b)
 		}
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if cliAssign && envValue == "" {
+			return nil
+		}
+
 		i, err := strconv.ParseInt(envValue, 10, 64)
 		if err != nil {
 			return errors.Wrap(err, "failed to convert from string to int")
@@ -394,6 +405,9 @@ func assignValue(ft reflect.Type, value reflect.Value, envValue string, isPtr bo
 			value.SetInt(i)
 		}
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		if cliAssign && envValue == "" {
+			return nil
+		}
 		ui, err := strconv.ParseUint(envValue, 10, 64)
 		if err != nil {
 			return errors.Wrap(err, "failed to convert from string to uint")
@@ -404,6 +418,9 @@ func assignValue(ft reflect.Type, value reflect.Value, envValue string, isPtr bo
 			value.SetUint(ui)
 		}
 	case reflect.Float32, reflect.Float64:
+		if cliAssign && envValue == "" {
+			return nil
+		}
 		f, err := strconv.ParseFloat(envValue, 64)
 		if err != nil {
 			return errors.Wrap(err, "failed to convert from string to float")

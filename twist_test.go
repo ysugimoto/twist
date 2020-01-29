@@ -242,3 +242,12 @@ func TestMixFallbackDefault(t *testing.T) {
 	assert.Equal(t, 8888, config.Server.Port)
 	assert.Equal(t, "tcp", config.Server.Protocol)
 }
+
+func TestMixCliWithBool(t *testing.T) {
+	var config struct {
+		Is bool `cli:"i,is" default:"false"`
+	}
+	err := twist.Mix(&config, twist.WithCli([]string{"-i"}))
+	assert.NoError(t, err)
+	assert.True(t, config.Is)
+}
