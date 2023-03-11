@@ -6,7 +6,9 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/go-ini/ini v1.42.0
 	github.com/go-yaml/yaml v2.1.0+incompatible
+	github.com/k0kubun/pp v3.0.1+incompatible // indirect
 	github.com/kr/pretty v0.1.0 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect
 	github.com/stretchr/testify v1.3.0

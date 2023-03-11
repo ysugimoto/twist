@@ -1,6 +1,7 @@
 package twist_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -123,6 +124,10 @@ func TestMixYaml(t *testing.T) {
 }
 
 func TestMixEnv(t *testing.T) {
+	os.Setenv("TOKEN", "token_from_env")
+	os.Setenv("HOST", "env.localhost")
+	os.Setenv("PORT", "3333")
+
 	config := struct {
 		Token  string `env:"TOKEN"`
 		Server struct {

@@ -215,9 +215,6 @@ func cascadeEnv(v reflect.Value) error {
 		}
 
 		if ft.Kind() == reflect.Struct {
-			if field.Tag == "" {
-				continue
-			}
 			cascadeEnv(value)
 			continue
 		}
@@ -260,9 +257,6 @@ func cascadeDefault(v reflect.Value) error {
 		}
 
 		if ft.Kind() == reflect.Struct {
-			if field.Tag == "" {
-				continue
-			}
 			cascadeDefault(value)
 			continue
 		}
