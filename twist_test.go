@@ -256,3 +256,12 @@ func TestMixCliWithBool(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, config.Is)
 }
+
+func TestMixCliWithSlice(t *testing.T) {
+	var config struct {
+		Multiples []string `cli:"m,mul"`
+	}
+	err := twist.Mix(&config, twist.WithCli([]string{"-m", "foo", "-m", "bar"}))
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"foo", "bar"}, config.Multiples)
+}
