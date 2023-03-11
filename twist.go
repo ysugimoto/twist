@@ -276,7 +276,7 @@ func cascadeDefault(v reflect.Value) error {
 }
 
 // Walk struct field and assign from command-line arguments
-func cascadeCli(v reflect.Value, cliOptions map[string]string) error {
+func cascadeCli(v reflect.Value, cliOptions map[string][]string) error {
 	t := derefType(v.Type())
 	v = derefValue(v)
 
@@ -304,7 +304,7 @@ func cascadeCli(v reflect.Value, cliOptions map[string]string) error {
 		if !ok || tag == "" || tag == "-" {
 			continue
 		}
-		var cliValue string
+		var cliValue []string
 		var found bool
 		for _, name := range strings.Split(tag, ",") {
 			if vv, ok := cliOptions[name]; ok {
@@ -316,8 +316,11 @@ func cascadeCli(v reflect.Value, cliOptions map[string]string) error {
 		if !found {
 			continue
 		}
-		if err := assignValue(ft, value, cliValue, isPtr, true); err != nil {
-			return errors.Wrap(err, "failed to assign values")
+
+		for _, v := range cliValue {
+			if err := assignValue(ft, value, v, isPtr, true); err != nil {
+				return errors.Wrap(err, "failed to assign values")
+			}
 		}
 		debug("assigned: ", field.Name, tag)
 	}
@@ -430,13 +433,22 @@ func assignValue(ft reflect.Type, value reflect.Value, envValue string, isPtr bo
 		} else {
 			value.SetFloat(f)
 		}
+	case reflect.Slice:
+		if cliAssign && envValue == "" {
+			return nil
+		}
+		if isPtr {
+			value.Set(reflect.AppendSlice(value, reflect.ValueOf([]string{envValue})))
+		} else {
+			value.Set(reflect.AppendSlice(value, reflect.ValueOf([]string{envValue})))
+		}
 	}
 	return nil
 }
 
 // Parse command-line argument strings to map with short/long keys
-func parseCliArgs(args []string) map[string]string {
-	options := make(map[string]string)
+func parseCliArgs(args []string) map[string][]string {
+	options := make(map[string][]string)
 	size := len(args)
 
 	for i := 0; i < size; i++ {
@@ -471,7 +483,11 @@ func parseCliArgs(args []string) map[string]string {
 				value = v[2:]
 			}
 		}
-		options[name] = value
+
+		if _, ok := options[name]; !ok {
+			options[name] = []string{}
+		}
+		options[name] = append(options[name], value)
 	}
 
 	return options
