@@ -175,7 +175,9 @@ func cascadeIni(cfg *ini.File, s *ini.Section, v reflect.Value) error {
 		if ft.Kind() == reflect.Struct {
 			if ss := cfg.Section(tag); ss != nil {
 				debug("subsection: ", tag, ss.KeyStrings())
-				cascadeIni(cfg, ss, value)
+				if err := cascadeIni(cfg, ss, value); err != nil {
+					return errors.Wrap(err, "Failed to parse subsection")
+				}
 			}
 			continue
 		}
@@ -215,7 +217,9 @@ func cascadeEnv(v reflect.Value) error {
 		}
 
 		if ft.Kind() == reflect.Struct {
-			cascadeEnv(value)
+			if err := cascadeEnv(value); err != nil {
+				return errors.Wrap(err, "Failed to cascade nested struct env")
+			}
 			continue
 		}
 		tag, ok := field.Tag.Lookup(tagNameEnv)
@@ -257,7 +261,9 @@ func cascadeDefault(v reflect.Value) error {
 		}
 
 		if ft.Kind() == reflect.Struct {
-			cascadeDefault(value)
+			if err := cascadeDefault(value); err != nil {
+				return errors.Wrap(err, "Failed to cascade default value for nested struct")
+			}
 			continue
 		}
 		if !isZeroValue(ft, value) {
@@ -297,7 +303,9 @@ func cascadeCli(v reflect.Value, cliOptions map[string][]string) error {
 		}
 
 		if ft.Kind() == reflect.Struct {
-			cascadeCli(value, cliOptions)
+			if err := cascadeCli(value, cliOptions); err != nil {
+				return errors.Wrap(err, "Failed to cascade cli arguments for nested struct")
+			}
 			continue
 		}
 		tag, ok := field.Tag.Lookup(tagNameCli)
@@ -345,7 +353,9 @@ func mergeConfig(v, merge reflect.Value, tagName string) error {
 		}
 		if field.Type.Kind() == reflect.Struct {
 			debug("nested struct: ", field.Name)
-			mergeConfig(v.Field(i), derefValue(target), tagName)
+			if err := mergeConfig(v.Field(i), derefValue(target), tagName); err != nil {
+				return errors.Wrap(err, "Failed to merge config for nested struct field: "+field.Name)
+			}
 		} else {
 			v.Field(i).Set(target)
 		}
@@ -359,7 +369,7 @@ func isZeroValue(ft reflect.Type, value reflect.Value) bool {
 	case reflect.String:
 		return value.String() == ""
 	case reflect.Bool:
-		return value.Bool() == false
+		return !value.Bool()
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return value.Int() == 0
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
