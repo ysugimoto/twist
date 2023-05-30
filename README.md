@@ -1,4 +1,3 @@
-[![CircleCI](https://circleci.com/gh/ysugimoto/twist.svg?style=svg)](https://circleci.com/gh/ysugimoto/twist)
 [![GoDoc](https://godoc.org/github.com/ysugimoto/twist?status.svg)](https://godoc.org/github.com/ysugimoto/twist)
 
 # twist
