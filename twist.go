@@ -95,7 +95,7 @@ func Mix(v interface{}, opts ...Option) error {
 				return errors.Wrap(err, "Failed to cascade env")
 			}
 		case optionNameCli:
-			if err := cascadeCli(value, parseCliArgs(opt.value.([]string))); err != nil {
+			if err := cascadeCli(value, parseCliArgs(value, opt.value.([]string))); err != nil {
 				return errors.Wrap(err, "Failed to cascade cli")
 			}
 		}
@@ -279,6 +279,40 @@ func cascadeDefault(v reflect.Value) error {
 		debug("assigned: ", field.Name, tag)
 	}
 	return nil
+}
+
+func factoryBooleanFieldNames(v reflect.Value, fields map[string]struct{}) {
+	t := derefType(v.Type())
+	v = derefValue(v)
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		value := v.Field(i)
+
+		if !value.CanSet() {
+			continue
+		}
+
+		ft := field.Type
+		if ft.Kind() == reflect.Ptr {
+			ft = derefType(ft)
+		}
+
+		if ft.Kind() != reflect.Bool {
+			continue
+		}
+		if ft.Kind() == reflect.Struct {
+			factoryBooleanFieldNames(value, fields)
+		}
+
+		tag, ok := field.Tag.Lookup(tagNameCli)
+		if !ok || tag == "" || tag == "-" {
+			continue
+		}
+		for _, name := range strings.Split(tag, ",") {
+			fields[strings.TrimSpace(name)] = struct{}{}
+		}
+	}
 }
 
 // Walk struct field and assign from command-line arguments
@@ -473,9 +507,17 @@ func assignValue(ft reflect.Type, value reflect.Value, envValue string, isPtr bo
 }
 
 // Parse command-line argument strings to map with short/long keys
-func parseCliArgs(args []string) map[string][]string {
+func parseCliArgs(value reflect.Value, args []string) map[string][]string {
 	options := make(map[string][]string)
 	size := len(args)
+
+	singleFields := make(map[string]struct{})
+	factoryBooleanFieldNames(value, singleFields)
+
+	isSingle := func(v string) bool {
+		_, ok := singleFields[v]
+		return ok
+	}
 
 	for i := 0; i < size; i++ {
 		v := args[i]
@@ -488,20 +530,27 @@ func parseCliArgs(args []string) map[string][]string {
 			// Parse as long argument
 			kv := strings.Split(v, "=")
 			name = kv[0][2:]
-			if len(kv) > 1 {
+			switch {
+			case isSingle(name):
+				value = ""
+			case len(kv) > 1:
 				value = kv[1]
-			} else if i+1 < size {
+			case i+1 < size && !strings.HasPrefix(args[i+1], "-"):
 				value = args[i+1]
 				i++
-			} else {
+			default:
 				value = ""
 			}
 		} else {
 			// Parse as short argument
 			name = string(v[1:])
-			if i+1 < size && !strings.HasPrefix(args[i+1], "-") {
+			switch {
+			case isSingle(name):
+				value = ""
+			case i+1 < size && !strings.HasPrefix(args[i+1], "-"):
 				value = args[i+1]
-			} else {
+				i++
+			default:
 				value = ""
 			}
 		}
