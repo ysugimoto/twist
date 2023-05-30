@@ -498,15 +498,11 @@ func parseCliArgs(args []string) map[string][]string {
 			}
 		} else {
 			// Parse as short argument
-			name = string(v[1])
-			if len(v) == 2 {
-				if i+1 < size {
-					value = args[i+1]
-				} else {
-					value = ""
-				}
+			name = string(v[1:])
+			if i+1 < size && !strings.HasPrefix(args[i+1], "-") {
+				value = args[i+1]
 			} else {
-				value = v[2:]
+				value = ""
 			}
 		}
 
