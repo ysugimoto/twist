@@ -96,7 +96,7 @@ func Mix(v interface{}, opts ...Option) error {
 			}
 		case optionNameCli:
 			if err := cascadeCli(value, parseCliArgs(opt.value.([]string))); err != nil {
-				return errors.Wrap(err, "Failed to cascase cli")
+				return errors.Wrap(err, "Failed to cascade cli")
 			}
 		}
 	}
@@ -318,6 +318,7 @@ func cascadeCli(v reflect.Value, cliOptions map[string][]string) error {
 			if vv, ok := cliOptions[name]; ok {
 				cliValue = vv
 				found = true
+				delete(cliOptions, name)
 				break
 			}
 		}
@@ -331,6 +332,21 @@ func cascadeCli(v reflect.Value, cliOptions map[string][]string) error {
 			}
 		}
 		debug("assigned: ", field.Name, tag)
+	}
+
+	// Check unrecognized cli option remains, raise an error
+	if len(cliOptions) > 0 {
+		unrecognized := make([]string, len(cliOptions))
+		for key := range cliOptions {
+			unrecognized = append(unrecognized, key)
+		}
+		var plural string
+		if len(unrecognized) > 1 {
+			plural = "s"
+		}
+		return errors.WithStack(
+			fmt.Errorf("Unrecognized cli option%s: %s", plural, strings.Join(unrecognized, ", ")),
+		)
 	}
 	return nil
 }

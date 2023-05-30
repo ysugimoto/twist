@@ -265,3 +265,11 @@ func TestMixCliWithSlice(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"foo", "bar"}, config.Multiples)
 }
+
+func TestMixCliWithUnrecognized(t *testing.T) {
+	var config struct {
+		Foo string `cli:"f,foo" default:"foo"`
+	}
+	err := twist.Mix(&config, twist.WithCli([]string{"-i"}))
+	assert.Error(t, err)
+}
