@@ -3,10 +3,10 @@ module github.com/ysugimoto/twist
 go 1.21
 
 require (
-	github.com/BurntSushi/toml v0.3.1
-	github.com/go-ini/ini v1.42.0
+	github.com/BurntSushi/toml v1.3.2
+	github.com/go-ini/ini v1.67.0
 	github.com/go-yaml/yaml v2.1.0+incompatible
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.3.0
 )
 
