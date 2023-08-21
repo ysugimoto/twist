@@ -15,9 +15,10 @@ func TestMixCli(t *testing.T) {
 			Host string `cli:"h,host"`
 			Port int    `cli:"p,port"`
 		}
+		Long string `cli:"long"`
 	}{}
 	// Actually provide from os.Args[1:]
-	args := []string{"-h", "cli.localhost", "--port=9000", "--token", "token_from_cli"}
+	args := []string{"-h", "cli.localhost", "--port=9000", "--token", "token_from_cli", "-long", "foo"}
 	err := twist.Mix(
 		&config,
 		twist.WithCli(args),
@@ -26,6 +27,7 @@ func TestMixCli(t *testing.T) {
 	assert.Equal(t, "token_from_cli", config.Token)
 	assert.Equal(t, "cli.localhost", config.Server.Host)
 	assert.Equal(t, 9000, config.Server.Port)
+	assert.Equal(t, "foo", config.Long)
 }
 
 func TestMixIni(t *testing.T) {

@@ -95,7 +95,7 @@ func Mix(v interface{}, opts ...Option) error {
 				return errors.Wrap(err, "Failed to cascade env")
 			}
 		case optionNameCli:
-			if err := cascadeCli(value, parseCliArgs(value, opt.value.([]string))); err != nil {
+			if err := cascadeCli(value, parseCliArgs(value, opt.value.([]string)), false); err != nil {
 				return errors.Wrap(err, "Failed to cascade cli")
 			}
 		}
@@ -316,7 +316,7 @@ func factoryBooleanFieldNames(v reflect.Value, fields map[string]struct{}) {
 }
 
 // Walk struct field and assign from command-line arguments
-func cascadeCli(v reflect.Value, cliOptions map[string][]string) error {
+func cascadeCli(v reflect.Value, cliOptions map[string][]string, isNested bool) error {
 	t := derefType(v.Type())
 	v = derefValue(v)
 
@@ -337,7 +337,7 @@ func cascadeCli(v reflect.Value, cliOptions map[string][]string) error {
 		}
 
 		if ft.Kind() == reflect.Struct {
-			if err := cascadeCli(value, cliOptions); err != nil {
+			if err := cascadeCli(value, cliOptions, true); err != nil {
 				return errors.Wrap(err, "Failed to cascade cli arguments for nested struct")
 			}
 			continue
@@ -366,6 +366,11 @@ func cascadeCli(v reflect.Value, cliOptions map[string][]string) error {
 			}
 		}
 		debug("assigned: ", field.Name, tag)
+	}
+
+	// If nested cascading, skip following
+	if isNested {
+		return nil
 	}
 
 	// Check unrecognized cli option remains, raise an error
