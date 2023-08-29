@@ -298,11 +298,12 @@ func factoryBooleanFieldNames(v reflect.Value, fields map[string]struct{}) {
 			ft = derefType(ft)
 		}
 
-		if ft.Kind() != reflect.Bool {
-			continue
-		}
 		if ft.Kind() == reflect.Struct {
 			factoryBooleanFieldNames(value, fields)
+			continue
+		}
+		if ft.Kind() != reflect.Bool {
+			continue
 		}
 
 		tag, ok := field.Tag.Lookup(tagNameCli)
