@@ -368,9 +368,7 @@ func cascadeCli(v reflect.Value, cliOptions map[string][]string, cloned map[stri
 			if vv, ok := cliOptions[name]; ok {
 				cliValue = vv
 				found = true
-				if _, ok := cloned[name]; ok {
-					delete(cloned, name)
-				}
+				delete(cloned, name)
 				break
 			}
 		}
