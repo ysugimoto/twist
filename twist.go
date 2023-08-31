@@ -217,6 +217,10 @@ func cascadeEnv(v reflect.Value) error {
 		}
 
 		if ft.Kind() == reflect.Struct {
+			if value.IsNil() {
+				debug("Nested struct ", field.Name, " is nil, create pointer")
+				value.Set(reflect.New(ft))
+			}
 			if err := cascadeEnv(value); err != nil {
 				return errors.Wrap(err, "Failed to cascade nested struct env")
 			}
@@ -321,6 +325,11 @@ func cascadeCli(v reflect.Value, cliOptions map[string][]string, isNested bool) 
 	t := derefType(v.Type())
 	v = derefValue(v)
 
+	cloned := make(map[string][]string)
+	for key, val := range cliOptions {
+		cloned[key] = val
+	}
+
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 		value := v.Field(i)
@@ -338,6 +347,10 @@ func cascadeCli(v reflect.Value, cliOptions map[string][]string, isNested bool) 
 		}
 
 		if ft.Kind() == reflect.Struct {
+			if value.IsNil() {
+				debug("Nested struct ", field.Name, " is nil, create pointer")
+				value.Set(reflect.New(ft))
+			}
 			if err := cascadeCli(value, cliOptions, true); err != nil {
 				return errors.Wrap(err, "Failed to cascade cli arguments for nested struct")
 			}
@@ -353,7 +366,7 @@ func cascadeCli(v reflect.Value, cliOptions map[string][]string, isNested bool) 
 			if vv, ok := cliOptions[name]; ok {
 				cliValue = vv
 				found = true
-				delete(cliOptions, name)
+				delete(cloned, name)
 				break
 			}
 		}
@@ -375,9 +388,9 @@ func cascadeCli(v reflect.Value, cliOptions map[string][]string, isNested bool) 
 	}
 
 	// Check unrecognized cli option remains, raise an error
-	if len(cliOptions) > 0 {
-		unrecognized := make([]string, len(cliOptions))
-		for key := range cliOptions {
+	if len(cloned) > 0 {
+		unrecognized := make([]string, len(cloned))
+		for key := range cloned {
 			unrecognized = append(unrecognized, key)
 		}
 		var plural string
