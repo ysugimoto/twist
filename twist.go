@@ -95,7 +95,7 @@ func Mix(v interface{}, opts ...Option) error {
 				return errors.Wrap(err, "Failed to cascade env")
 			}
 		case optionNameCli:
-			if err := cascadeCli(value, parseCliArgs(value, opt.value.([]string)), false); err != nil {
+			if err := cascadeCli(value, parseCliArgs(value, opt.value.([]string)), nil, false); err != nil {
 				return errors.Wrap(err, "Failed to cascade cli")
 			}
 		}
@@ -217,7 +217,7 @@ func cascadeEnv(v reflect.Value) error {
 		}
 
 		if ft.Kind() == reflect.Struct {
-			if value.IsNil() {
+			if isPtr && value.IsNil() {
 				debug("Nested struct ", field.Name, " is nil, create pointer")
 				value.Set(reflect.New(ft))
 			}
@@ -321,13 +321,15 @@ func factoryBooleanFieldNames(v reflect.Value, fields map[string]struct{}) {
 }
 
 // Walk struct field and assign from command-line arguments
-func cascadeCli(v reflect.Value, cliOptions map[string][]string, isNested bool) error {
+func cascadeCli(v reflect.Value, cliOptions map[string][]string, cloned map[string][]string, isNested bool) error {
 	t := derefType(v.Type())
 	v = derefValue(v)
 
-	cloned := make(map[string][]string)
-	for key, val := range cliOptions {
-		cloned[key] = val
+	if cloned == nil {
+		cloned = make(map[string][]string)
+		for key, val := range cliOptions {
+			cloned[key] = val
+		}
 	}
 
 	for i := 0; i < t.NumField(); i++ {
@@ -347,11 +349,11 @@ func cascadeCli(v reflect.Value, cliOptions map[string][]string, isNested bool) 
 		}
 
 		if ft.Kind() == reflect.Struct {
-			if value.IsNil() {
+			if isPtr && value.IsNil() {
 				debug("Nested struct ", field.Name, " is nil, create pointer")
 				value.Set(reflect.New(ft))
 			}
-			if err := cascadeCli(value, cliOptions, true); err != nil {
+			if err := cascadeCli(value, cliOptions, cloned, true); err != nil {
 				return errors.Wrap(err, "Failed to cascade cli arguments for nested struct")
 			}
 			continue
@@ -366,7 +368,9 @@ func cascadeCli(v reflect.Value, cliOptions map[string][]string, isNested bool) 
 			if vv, ok := cliOptions[name]; ok {
 				cliValue = vv
 				found = true
-				delete(cloned, name)
+				if _, ok := cloned[name]; ok {
+					delete(cloned, name)
+				}
 				break
 			}
 		}
@@ -390,8 +394,10 @@ func cascadeCli(v reflect.Value, cliOptions map[string][]string, isNested bool) 
 	// Check unrecognized cli option remains, raise an error
 	if len(cloned) > 0 {
 		unrecognized := make([]string, len(cloned))
+		var idx int
 		for key := range cloned {
-			unrecognized = append(unrecognized, key)
+			unrecognized[idx] = key
+			idx++
 		}
 		var plural string
 		if len(unrecognized) > 1 {

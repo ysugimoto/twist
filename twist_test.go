@@ -15,7 +15,8 @@ func TestMixCli(t *testing.T) {
 			Host string `cli:"h,host"`
 			Port int    `cli:"p,port"`
 		}
-		Long string `cli:"long"`
+		Long           string `cli:"long"`
+		DuplicatedHost string `cli:"h,host"`
 	}{}
 	// Actually provide from os.Args[1:]
 	args := []string{"-h", "cli.localhost", "--port=9000", "--token", "token_from_cli", "-long", "foo"}
@@ -28,6 +29,7 @@ func TestMixCli(t *testing.T) {
 	assert.Equal(t, "cli.localhost", config.Server.Host)
 	assert.Equal(t, 9000, config.Server.Port)
 	assert.Equal(t, "foo", config.Long)
+	assert.Equal(t, "cli.localhost", config.DuplicatedHost)
 }
 
 func TestMixIni(t *testing.T) {
